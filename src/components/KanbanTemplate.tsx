@@ -7,8 +7,8 @@ import Chip from '@mui/material/Chip'
 import EditTaskForm from '@/src/components/EditTaskForm'
 import type { EditTaskFormValues } from '@/src/components/EditTaskForm'
 import FullCalendar from '@/src/components/FullCalendar'
-import { getFilteredTasks } from '@/src/utils/Filter'
-import type { TaskFilters } from '@/src/utils/Filter'
+import { useFilter } from '@/src/hooks/useFilter'
+import type { TaskFilters } from '@/src/hooks/useFilter'
 import MenuItem from '@mui/material/MenuItem'
 import Modal from '@/src/components/Modal'
 import NewTaskButton from '@/src/components/NewTaskButton'
@@ -23,27 +23,11 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import type { SelectChangeEvent } from '@mui/material/Select'
 import KanbanTaskDropdown from '@/src/components/KanbanTaskDropdown'
-import {
-  defaultCardsPerPage,
-  getMaxPage,
-  getNextCardsPerPage,
-  getNextPage,
-  getSafePage,
-  getVisibleItems,
-  paginationSx
-} from '@/src/utils/Pagination'
-import {
-  getNextTaskId,
-  getServerStoredTasksSnapshot,
-  getStoredTasksSnapshot,
-  parseStoredTasks,
-  saveStoredTasks,
-  subscribeToStoredTasks
-} from '@/src/utils/Storage'
-import { exportTasksToCsv, exportTasksToXlsx } from '@/src/utils/Report'
-import type { ReportFormat } from '@/src/utils/Report'
-import type { KanbanColumn, Priority, TaskCard } from '@/src/utils/TodoListColumn'
-import { initialColumns } from '@/src/utils/TodoListColumn'
+import { usePagination } from '@/src/hooks/usePagination'
+import { useStorage } from '@/src/hooks/useStorage'
+import { useReport } from '@/src/hooks/useReport'
+import type { ReportFormat } from '@/src/hooks/useReport'
+import { useTodoListColumn, type KanbanColumn, type Priority, type TaskCard } from '@/src/hooks/useTodoListColumn'
 
 type KanbanTemplateProps = {
   filters: TaskFilters
@@ -62,6 +46,26 @@ const statusColorMap: Record<TaskCard['status'], 'default' | 'success'> = {
 }
 
 export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateProps) {
+  const { getFilteredTasks } = useFilter()
+  const {
+    defaultCardsPerPage,
+    getMaxPage,
+    getNextCardsPerPage,
+    getNextPage,
+    getSafePage,
+    getVisibleItems,
+    paginationSx
+  } = usePagination()
+  const {
+    getNextTaskId,
+    getServerStoredTasksSnapshot,
+    getStoredTasksSnapshot,
+    parseStoredTasks,
+    saveStoredTasks,
+    subscribeToStoredTasks
+  } = useStorage()
+  const { exportTasksToCsv, exportTasksToXlsx } = useReport()
+  const { initialColumns } = useTodoListColumn()
   const storedTasksSnapshot = React.useSyncExternalStore(
     subscribeToStoredTasks,
     getStoredTasksSnapshot,
@@ -69,7 +73,7 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
   )
   const persistedTasks = React.useMemo(
     () => parseStoredTasks(storedTasksSnapshot, initialColumns.tasks),
-    [storedTasksSnapshot]
+    [initialColumns.tasks, parseStoredTasks, storedTasksSnapshot]
   )
   const [taskOverrides, setTaskOverrides] = React.useState<TaskCard[] | null>(null)
 
@@ -89,7 +93,7 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
     }
 
     saveStoredTasks(taskOverrides)
-  }, [taskOverrides])
+  }, [saveStoredTasks, taskOverrides])
 
   const handleChangePage = (
     _event: React.MouseEvent<HTMLButtonElement> | null,

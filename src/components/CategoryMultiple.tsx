@@ -11,18 +11,8 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { SelectChangeEvent } from '@mui/material/Select'
-import {
-  categoryColorOptions,
-  getCategoryValue,
-  parseCategoryValue
-} from '@/src/utils/CategoryMultiple'
-import {
-  defaultCategoryColor,
-  defaultCategoryOptions,
-  getCategoryColor,
-  normalizeTaskCategories,
-  type TaskCategory
-} from '@/src/utils/TodoListColumn'
+import { useCategoryMultiple } from '@/src/hooks/useCategoryMultiple'
+import { useTodoListColumn, type TaskCategory } from '@/src/hooks/useTodoListColumn'
 
 type CategoryMultipleProps = {
   value: TaskCategory[]
@@ -30,6 +20,13 @@ type CategoryMultipleProps = {
 }
 
 export default function CategoryMultiple({ value, onChange }: CategoryMultipleProps) {
+  const { categoryColorOptions, getCategoryValue, parseCategoryValue } = useCategoryMultiple()
+  const {
+    defaultCategoryColor,
+    defaultCategoryOptions,
+    getCategoryColor,
+    normalizeTaskCategories
+  } = useTodoListColumn()
   const [customOptions, setCustomOptions] = React.useState<TaskCategory[]>([])
   const [customCategory, setCustomCategory] = React.useState('')
   const [customCategoryColor, setCustomCategoryColor] = React.useState(defaultCategoryColor)
@@ -41,7 +38,7 @@ export default function CategoryMultiple({ value, onChange }: CategoryMultiplePr
       normalizeTaskCategories([...defaultCategoryOptions, ...customOptions, ...value]).sort(
         (left, right) => left.label.localeCompare(right.label)
       ),
-    [customOptions, value]
+    [customOptions, defaultCategoryOptions, normalizeTaskCategories, value]
   )
 
   const renderCategoryValue = () => {

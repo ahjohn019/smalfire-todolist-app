@@ -5,9 +5,9 @@ import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import MoreHorizOutlinedIcon from '@mui/icons-material/MoreHorizOutlined'
-import type { TaskCard } from '@/src/utils/TodoListColumn'
+import type { TaskCard } from '@/src/hooks/useTodoListColumn'
 import ReportModal from '@/src/components/ReportModal'
-import type { ReportFormat } from '@/src/utils/Report'
+import type { ReportFormat } from '@/src/hooks/useReport'
 
 export type ReportDropdownProps = {
   onExport?: (format: ReportFormat) => void

@@ -1,6 +1,6 @@
-import { normalizeTaskCategories, type TaskCard } from '@/src/utils/TodoListColumn'
+import { useTodoListColumn, type TaskCard } from '@/src/hooks/useTodoListColumn'
 
-export const TODO_LIST_VIEW_STORAGE_KEY = 'to-do-list-view'
+const TODO_LIST_VIEW_STORAGE_KEY = 'to-do-list-view'
 const TODO_LIST_VIEW_STORAGE_EVENT = 'to-do-list-storage-change'
 
 const getHighestTaskId = (tasks: TaskCard[]) => {
@@ -8,7 +8,10 @@ const getHighestTaskId = (tasks: TaskCard[]) => {
   return taskIds.length > 0 ? Math.max(...taskIds) : 0
 }
 
-const normalizeStoredTasks = (tasks: TaskCard[]): TaskCard[] => {
+const normalizeStoredTasks = (
+  tasks: TaskCard[],
+  normalizeTaskCategories: ReturnType<typeof useTodoListColumn>['normalizeTaskCategories']
+): TaskCard[] => {
   const seenIds = new Set<number>()
   let nextTaskId = getHighestTaskId(tasks)
 
@@ -24,7 +27,7 @@ const normalizeStoredTasks = (tasks: TaskCard[]): TaskCard[] => {
   })
 }
 
-export const subscribeToStoredTasks = (onStoreChange: () => void) => {
+const subscribeToStoredTasks = (onStoreChange: () => void) => {
   try {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === TODO_LIST_VIEW_STORAGE_KEY) {
@@ -48,7 +51,7 @@ export const subscribeToStoredTasks = (onStoreChange: () => void) => {
   }
 }
 
-export const getStoredTasksSnapshot = () => {
+const getStoredTasksSnapshot = () => {
   try {
     return localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY)
   } catch {
@@ -56,9 +59,13 @@ export const getStoredTasksSnapshot = () => {
   }
 }
 
-export const getServerStoredTasksSnapshot = () => null
+const getServerStoredTasksSnapshot = () => null
 
-export const parseStoredTasks = (storedTasks: string | null, fallbackTasks: TaskCard[]) => {
+const parseStoredTasks = (
+  storedTasks: string | null,
+  fallbackTasks: TaskCard[],
+  normalizeTaskCategories: ReturnType<typeof useTodoListColumn>['normalizeTaskCategories']
+) => {
   if (!storedTasks) {
     return fallbackTasks
   }
@@ -66,15 +73,32 @@ export const parseStoredTasks = (storedTasks: string | null, fallbackTasks: Task
   try {
     const parsedTasks = JSON.parse(storedTasks) as TaskCard[]
 
-    return Array.isArray(parsedTasks) ? normalizeStoredTasks(parsedTasks) : fallbackTasks
+    return Array.isArray(parsedTasks)
+      ? normalizeStoredTasks(parsedTasks, normalizeTaskCategories)
+      : fallbackTasks
   } catch {
     return fallbackTasks
   }
 }
 
-export const getNextTaskId = (tasks: TaskCard[]) => getHighestTaskId(tasks) + 1
+const getNextTaskId = (tasks: TaskCard[]) => getHighestTaskId(tasks) + 1
 
-export const saveStoredTasks = (tasks: TaskCard[]) => {
+const saveStoredTasks = (tasks: TaskCard[]) => {
   localStorage.setItem(TODO_LIST_VIEW_STORAGE_KEY, JSON.stringify(tasks))
   dispatchEvent(new Event(TODO_LIST_VIEW_STORAGE_EVENT))
+}
+
+export const useStorage = () => {
+  const { normalizeTaskCategories } = useTodoListColumn()
+
+  return {
+    TODO_LIST_VIEW_STORAGE_KEY,
+    subscribeToStoredTasks,
+    getStoredTasksSnapshot,
+    getServerStoredTasksSnapshot,
+    parseStoredTasks: (storedTasks: string | null, fallbackTasks: TaskCard[]) =>
+      parseStoredTasks(storedTasks, fallbackTasks, normalizeTaskCategories),
+    getNextTaskId,
+    saveStoredTasks
+  }
 }

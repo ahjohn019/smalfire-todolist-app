@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import type { TaskFilters } from '@/src/utils/Filter'
+import type { TaskFilters } from '@/src/hooks/useFilter'
 
 type KanbanTemplateClientProps = {
   filters: TaskFilters

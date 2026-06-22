@@ -15,7 +15,7 @@ import Switch from '@mui/material/Switch'
 import Typography from '@mui/material/Typography'
 import type { SelectChangeEvent } from '@mui/material/Select'
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded'
-import type { DueDateSortOrder, TaskFilters } from '@/src/utils/Filter'
+import type { DueDateSortOrder, TaskFilters } from '@/src/hooks/useFilter'
 type FilterProps = {
   filters: TaskFilters
   onChange: (filters: TaskFilters) => void

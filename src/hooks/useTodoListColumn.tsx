@@ -10,13 +10,13 @@ export type TaskCategory = {
   color: string
 }
 
-export const defaultCategoryOptions: TaskCategory[] = [
+const defaultCategoryOptions: TaskCategory[] = [
   { label: 'Work', color: '#2563eb' },
   { label: 'Personal', color: '#16a34a' },
   { label: 'Urgent', color: '#dc2626' }
 ]
 
-export const defaultCategoryColor = '#2563eb'
+const defaultCategoryColor = '#2563eb'
 
 const categoryColorByLabel: Record<string, string> = {
   work: '#2563eb',
@@ -37,7 +37,7 @@ const fallbackCategoryColors = [
   '#475569'
 ]
 
-export const getCategoryColor = (label: string) => {
+const getCategoryColor = (label: string) => {
   const normalizedLabel = label.trim().toLowerCase()
 
   if (!normalizedLabel) {
@@ -57,7 +57,7 @@ export const getCategoryColor = (label: string) => {
   return fallbackCategoryColors[colorIndex % fallbackCategoryColors.length]
 }
 
-export const normalizeTaskCategory = (
+const normalizeTaskCategory = (
   category: string | Partial<TaskCategory> | null | undefined
 ): TaskCategory | null => {
   if (typeof category === 'string') {
@@ -84,7 +84,7 @@ export const normalizeTaskCategory = (
   }
 }
 
-export const normalizeTaskCategories = (
+const normalizeTaskCategories = (
   categories: Array<string | Partial<TaskCategory>> | null | undefined
 ): TaskCategory[] =>
   Array.from(
@@ -115,10 +115,21 @@ export type KanbanColumn = {
   tasks: TaskCard[]
 }
 
-export const initialColumns: KanbanColumn = {
+const initialColumns: KanbanColumn = {
   id: 'todo',
   title: 'To Do List',
   accent: '#f97316',
   icon: <AccessTimeOutlinedIcon fontSize="small" />,
   tasks: []
+}
+
+export const useTodoListColumn = () => {
+  return {
+    defaultCategoryOptions,
+    defaultCategoryColor,
+    getCategoryColor,
+    normalizeTaskCategory,
+    normalizeTaskCategories,
+    initialColumns
+  }
 }

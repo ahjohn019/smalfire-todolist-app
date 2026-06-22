@@ -1,4 +1,4 @@
-import type { TaskCard } from '@/src/utils/TodoListColumn'
+import type { TaskCard } from '@/src/hooks/useTodoListColumn'
 
 export type DueDateSortOrder = 'none' | 'ascending' | 'descending'
 
@@ -9,7 +9,7 @@ export type TaskFilters = {
   showIncomplete: boolean
 }
 
-export const defaultTaskFilters: TaskFilters = {
+const defaultTaskFilters: TaskFilters = {
   dueDateSort: 'none',
   highPriorityOnly: false,
   showComplete: true,
@@ -102,7 +102,7 @@ const sortTasksByDueDate = (tasks: TaskCard[], direction: 1 | -1): TaskCard[] =>
   })
 }
 
-export const getFilteredTasks = (
+const getFilteredTasks = (
   tasks: TaskCard[],
   filters: TaskFilters,
   searchQuery: string
@@ -123,4 +123,11 @@ export const getFilteredTasks = (
   const direction = filters.dueDateSort === 'ascending' ? 1 : -1
 
   return sortTasksByDueDate(filteredTasks, direction)
+}
+
+export const useFilter = () => {
+  return {
+    defaultTaskFilters,
+    getFilteredTasks
+  }
 }

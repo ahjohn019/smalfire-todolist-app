@@ -7,7 +7,7 @@ import CategoryMultiple from '@/src/components/CategoryMultiple'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
-import type { TaskCategory } from '@/src/utils/TodoListColumn'
+import type { TaskCategory } from '@/src/hooks/useTodoListColumn'
 
 type NewTaskFormProps = {
   onCancel: () => void

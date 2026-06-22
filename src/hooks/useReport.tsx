@@ -1,10 +1,10 @@
 import * as XLSX from 'xlsx'
 import {
-  normalizeTaskCategories,
+  useTodoListColumn,
   type Priority,
   type TaskCard,
   type TaskStatus
-} from '@/src/utils/TodoListColumn'
+} from '@/src/hooks/useTodoListColumn'
 
 type ImportedCellValue = string | number | boolean | Date | null | ImportedCellValue[]
 
@@ -22,7 +22,10 @@ const getImportedRowValue = (row: ImportedTaskRow, key: string) => {
 
 const normalizeImportedString = (value: ImportedCellValue) => String(value ?? '').trim()
 
-const normalizeImportedCategories = (value: ImportedCellValue) => {
+const normalizeImportedCategories = (
+  value: ImportedCellValue,
+  normalizeTaskCategories: ReturnType<typeof useTodoListColumn>['normalizeTaskCategories']
+) => {
   if (Array.isArray(value)) {
     return normalizeTaskCategories(
       value.map((category) => ({
@@ -94,7 +97,10 @@ const normalizeImportedDueDate = (value: ImportedCellValue): string => {
   return normalizeImportedString(value)
 }
 
-const mapImportedRowsToTasks = (rows: ImportedTaskRow[]): TaskCard[] =>
+const mapImportedRowsToTasks = (
+  rows: ImportedTaskRow[],
+  normalizeTaskCategories: ReturnType<typeof useTodoListColumn>['normalizeTaskCategories']
+): TaskCard[] =>
   rows
     .map((row, index) => {
       const title = normalizeImportedString(getImportedRowValue(row, 'title'))
@@ -107,7 +113,10 @@ const mapImportedRowsToTasks = (rows: ImportedTaskRow[]): TaskCard[] =>
         id: index + 1,
         title,
         summary: normalizeImportedString(getImportedRowValue(row, 'summary')),
-        categories: normalizeImportedCategories(getImportedRowValue(row, 'categories')),
+        categories: normalizeImportedCategories(
+          getImportedRowValue(row, 'categories'),
+          normalizeTaskCategories
+        ),
         priority: normalizeImportedPriority(getImportedRowValue(row, 'priority')),
         status: normalizeImportedStatus(getImportedRowValue(row, 'status')),
         assignee: normalizeImportedString(getImportedRowValue(row, 'assignee')),
@@ -127,7 +136,10 @@ const mapTasksToExportRows = (tasks: TaskCard[]) =>
     due: task.due
   }))
 
-export const importTasksFromWorkbook = async (file: File): Promise<TaskCard[]> => {
+const importTasksFromWorkbook = async (
+  file: File,
+  normalizeTaskCategories: ReturnType<typeof useTodoListColumn>['normalizeTaskCategories']
+): Promise<TaskCard[]> => {
   const fileBuffer = await file.arrayBuffer()
   const workbook = XLSX.read(fileBuffer, { type: 'array' })
   const firstSheetName = workbook.SheetNames[0]
@@ -139,14 +151,17 @@ export const importTasksFromWorkbook = async (file: File): Promise<TaskCard[]> =
 
   const rows = XLSX.utils.sheet_to_json<ImportedTaskRow>(firstSheet, { defval: '' })
 
-  return mapImportedRowsToTasks(rows)
+  return mapImportedRowsToTasks(rows, normalizeTaskCategories)
 }
 
-export const importTasksFromFile = async (file: File): Promise<TaskCard[]> => {
-  return importTasksFromWorkbook(file)
+const importTasksFromFile = async (
+  file: File,
+  normalizeTaskCategories: ReturnType<typeof useTodoListColumn>['normalizeTaskCategories']
+): Promise<TaskCard[]> => {
+  return importTasksFromWorkbook(file, normalizeTaskCategories)
 }
 
-export const exportTasksToCsv = (tasks: TaskCard[]) => {
+const exportTasksToCsv = (tasks: TaskCard[]) => {
   const worksheet = XLSX.utils.json_to_sheet(mapTasksToExportRows(tasks))
   const csvContent = XLSX.utils.sheet_to_csv(worksheet)
   const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -160,10 +175,21 @@ export const exportTasksToCsv = (tasks: TaskCard[]) => {
   URL.revokeObjectURL(downloadUrl)
 }
 
-export const exportTasksToXlsx = (tasks: TaskCard[]) => {
+const exportTasksToXlsx = (tasks: TaskCard[]) => {
   const worksheet = XLSX.utils.json_to_sheet(mapTasksToExportRows(tasks))
   const workbook = XLSX.utils.book_new()
 
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Tasks')
   XLSX.writeFile(workbook, 'tasks.xlsx')
+}
+
+export const useReport = () => {
+  const { normalizeTaskCategories } = useTodoListColumn()
+
+  return {
+    importTasksFromWorkbook: (file: File) => importTasksFromWorkbook(file, normalizeTaskCategories),
+    importTasksFromFile: (file: File) => importTasksFromFile(file, normalizeTaskCategories),
+    exportTasksToCsv,
+    exportTasksToXlsx
+  }
 }

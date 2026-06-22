@@ -5,9 +5,9 @@ import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import Modal from '@/src/components/Modal'
-import type { TaskCard } from '@/src/utils/TodoListColumn'
-import { importTasksFromFile } from '@/src/utils/Report'
-import type { ReportFormat } from '@/src/utils/Report'
+import type { TaskCard } from '@/src/hooks/useTodoListColumn'
+import { useReport } from '@/src/hooks/useReport'
+import type { ReportFormat } from '@/src/hooks/useReport'
 
 type ReportModalMode = 'import' | 'export'
 
@@ -25,6 +25,7 @@ const fileAcceptByFormat: Record<ReportFormat, string> = {
 }
 
 export default function ReportModal({ mode, open, onClose, onExport, onImport }: ReportModalProps) {
+  const { importTasksFromFile } = useReport()
   const csvInputRef = React.useRef<HTMLInputElement | null>(null)
   const xlsxInputRef = React.useRef<HTMLInputElement | null>(null)
 

@@ -11,16 +11,9 @@ import Calendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/react/daygrid'
 import themePlugin from '@fullcalendar/react/themes/monarch'
 
-import { categoryColorOptions } from '@/src/utils/CategoryMultiple'
-import {
-  getServerStoredTasksSnapshot,
-  saveStoredTasks,
-  getStoredTasksSnapshot,
-  parseStoredTasks,
-  subscribeToStoredTasks
-} from '@/src/utils/Storage'
-import type { TaskCard } from '@/src/utils/TodoListColumn'
-import { initialColumns } from '@/src/utils/TodoListColumn'
+import { useCategoryMultiple } from '@/src/hooks/useCategoryMultiple'
+import { useStorage } from '@/src/hooks/useStorage'
+import { useTodoListColumn, type TaskCard } from '@/src/hooks/useTodoListColumn'
 
 export type FullCalendarProps = {
   tasks?: TaskCard[]
@@ -39,6 +32,15 @@ export default function FullCalendar({
   onCategoryColorChange
 }: FullCalendarProps) {
   const theme = useTheme()
+  const { categoryColorOptions } = useCategoryMultiple()
+  const {
+    getServerStoredTasksSnapshot,
+    saveStoredTasks,
+    getStoredTasksSnapshot,
+    parseStoredTasks,
+    subscribeToStoredTasks
+  } = useStorage()
+  const { initialColumns } = useTodoListColumn()
   const [categoryMenuAnchor, setCategoryMenuAnchor] = React.useState<HTMLElement | null>(null)
   const [activeCategory, setActiveCategory] = React.useState<{
     taskId: number
@@ -52,7 +54,7 @@ export default function FullCalendar({
 
   const storedTasks = React.useMemo(
     () => parseStoredTasks(storedTasksSnapshot, initialColumns.tasks),
-    [storedTasksSnapshot]
+    [initialColumns.tasks, parseStoredTasks, storedTasksSnapshot]
   )
   const tasks = tasksProp ?? storedTasks
 
