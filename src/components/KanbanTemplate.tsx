@@ -148,6 +148,27 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
     setTaskOverrides((current) => (current ?? tasks).filter((task) => task.id !== taskId))
   }
 
+  const handleCategoryColorChange = (taskId: number, categoryLabel: string, color: string) => {
+    const normalizedCategoryLabel = categoryLabel.toLowerCase()
+
+    setTaskOverrides((current) =>
+      (current ?? tasks).map((task) => ({
+        ...task,
+        categories:
+          task.id === taskId
+            ? task.categories.map((category) =>
+                category.label.toLowerCase() === normalizedCategoryLabel
+                  ? {
+                      ...category,
+                      color
+                    }
+                  : category
+              )
+            : task.categories
+      }))
+    )
+  }
+
   const handleTaskCreated = (newTask: NewTaskFormValues) => {
     setTaskOverrides((current) => {
       const baseTasks = current ?? tasks
@@ -379,7 +400,11 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
                   ))}
                 </Stack>
               ) : (
-                <FullCalendar tasks={filteredTasks} hideHeader />
+                <FullCalendar
+                  tasks={filteredTasks}
+                  hideHeader
+                  onCategoryColorChange={handleCategoryColorChange}
+                />
               )}
             </Stack>
 

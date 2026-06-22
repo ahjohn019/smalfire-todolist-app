@@ -25,6 +25,7 @@ import { initialColumns } from '@/src/utils/TodoListColumn'
 export type FullCalendarProps = {
   tasks?: TaskCard[]
   hideHeader?: boolean
+  onCategoryColorChange?: (taskId: number, categoryLabel: string, color: string) => void
 }
 
 const priorityColorMap: Record<TaskCard['priority'], string> = {
@@ -33,10 +34,16 @@ const priorityColorMap: Record<TaskCard['priority'], string> = {
   Low: '#16a34a'
 }
 
-export default function FullCalendar({ tasks: tasksProp }: FullCalendarProps) {
+export default function FullCalendar({
+  tasks: tasksProp,
+  onCategoryColorChange
+}: FullCalendarProps) {
   const theme = useTheme()
   const [categoryMenuAnchor, setCategoryMenuAnchor] = React.useState<HTMLElement | null>(null)
-  const [activeCategoryLabel, setActiveCategoryLabel] = React.useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = React.useState<{
+    taskId: number
+    label: string
+  } | null>(null)
   const storedTasksSnapshot = React.useSyncExternalStore(
     subscribeToStoredTasks,
     getStoredTasksSnapshot,
@@ -49,30 +56,43 @@ export default function FullCalendar({ tasks: tasksProp }: FullCalendarProps) {
   )
   const tasks = tasksProp ?? storedTasks
 
-  const handleOpenCategoryMenu = (event: React.MouseEvent<HTMLElement>, categoryLabel: string) => {
+  const handleOpenCategoryMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    taskId: number,
+    categoryLabel: string
+  ) => {
     event.stopPropagation()
-    setActiveCategoryLabel(categoryLabel)
+    setActiveCategory({ taskId, label: categoryLabel })
     setCategoryMenuAnchor(event.currentTarget)
   }
 
   const handleCloseCategoryMenu = () => {
-    setActiveCategoryLabel(null)
+    setActiveCategory(null)
     setCategoryMenuAnchor(null)
   }
 
-  const handleCategoryColorChange = (categoryLabel: string, color: string) => {
+  const handleCategoryColorChange = (taskId: number, categoryLabel: string, color: string) => {
+    if (onCategoryColorChange) {
+      onCategoryColorChange(taskId, categoryLabel, color)
+      handleCloseCategoryMenu()
+      return
+    }
+
     const baseTasks = storedTasks.length > 0 ? storedTasks : tasks
     const normalizedCategoryLabel = categoryLabel.toLowerCase()
     const nextTasks = baseTasks.map((task) => ({
       ...task,
-      categories: task.categories.map((category) =>
-        category.label.toLowerCase() === normalizedCategoryLabel
-          ? {
-              ...category,
-              color
-            }
-          : category
-      )
+      categories:
+        task.id === taskId
+          ? task.categories.map((category) =>
+              category.label.toLowerCase() === normalizedCategoryLabel
+                ? {
+                    ...category,
+                    color
+                  }
+                : category
+            )
+          : task.categories
     }))
 
     saveStoredTasks(nextTasks)
@@ -137,7 +157,7 @@ export default function FullCalendar({ tasks: tasksProp }: FullCalendarProps) {
                       type="button"
                       key={`${task.id}-${category.label}`}
                       onClick={(event: React.MouseEvent<HTMLElement>) =>
-                        handleOpenCategoryMenu(event, category.label)
+                        handleOpenCategoryMenu(event, task.id, category.label)
                       }
                       sx={{
                         appearance: 'none',
@@ -170,15 +190,19 @@ export default function FullCalendar({ tasks: tasksProp }: FullCalendarProps) {
       />
       <Menu
         anchorEl={categoryMenuAnchor}
-        open={Boolean(categoryMenuAnchor && activeCategoryLabel)}
+        open={Boolean(categoryMenuAnchor && activeCategory)}
         onClose={handleCloseCategoryMenu}
       >
         {categoryColorOptions.map((colorOption) => (
           <MenuItem
             key={colorOption.value}
             onClick={() =>
-              activeCategoryLabel
-                ? handleCategoryColorChange(activeCategoryLabel, colorOption.value)
+              activeCategory
+                ? handleCategoryColorChange(
+                    activeCategory.taskId,
+                    activeCategory.label,
+                    colorOption.value
+                  )
                 : undefined
             }
           >
