@@ -1,0 +1,419 @@
+'use client'
+
+import * as React from 'react'
+import Avatar from '@mui/material/Avatar'
+import Box from '@mui/material/Box'
+import Chip from '@mui/material/Chip'
+import EditTaskForm from '@/src/components/EditTaskForm'
+import type { EditTaskFormValues } from '@/src/components/EditTaskForm'
+import FullCalendar from '@/src/components/FullCalendar'
+import { getFilteredTasks } from '@/src/utils/Filter'
+import type { TaskFilters } from '@/src/utils/Filter'
+import MenuItem from '@mui/material/MenuItem'
+import Modal from '@/src/components/Modal'
+import NewTaskButton from '@/src/components/NewTaskButton'
+import type { NewTaskFormValues } from '@/src/components/NewTaskForm'
+import Paper from '@mui/material/Paper'
+import ReportDropdown from '@/src/components/ReportDropdown'
+import Select from '@mui/material/Select'
+import Stack from '@mui/material/Stack'
+import TablePagination from '@mui/material/TablePagination'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import Typography from '@mui/material/Typography'
+import type { SelectChangeEvent } from '@mui/material/Select'
+import KanbanTaskDropdown from '@/src/components/KanbanTaskDropdown'
+import {
+  defaultCardsPerPage,
+  getMaxPage,
+  getNextCardsPerPage,
+  getNextPage,
+  getSafePage,
+  getVisibleItems,
+  paginationSx
+} from '@/src/utils/Pagination'
+import {
+  getNextTaskId,
+  getServerStoredTasksSnapshot,
+  getStoredTasksSnapshot,
+  parseStoredTasks,
+  saveStoredTasks,
+  subscribeToStoredTasks
+} from '@/src/utils/Storage'
+import { exportTasksToCsv, exportTasksToXlsx } from '@/src/utils/Report'
+import type { ReportFormat } from '@/src/utils/Report'
+import type { KanbanColumn, Priority, TaskCard } from '@/src/utils/TodoListColumn'
+import { initialColumns } from '@/src/utils/TodoListColumn'
+
+type KanbanTemplateProps = {
+  filters: TaskFilters
+  searchQuery: string
+}
+
+const priorityColorMap: Record<Priority, 'error' | 'warning' | 'success'> = {
+  High: 'error',
+  Medium: 'warning',
+  Low: 'success'
+}
+
+const statusColorMap: Record<TaskCard['status'], 'default' | 'success'> = {
+  Complete: 'success',
+  Incomplete: 'default'
+}
+
+export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateProps) {
+  const storedTasksSnapshot = React.useSyncExternalStore(
+    subscribeToStoredTasks,
+    getStoredTasksSnapshot,
+    getServerStoredTasksSnapshot
+  )
+  const persistedTasks = React.useMemo(
+    () => parseStoredTasks(storedTasksSnapshot, initialColumns.tasks),
+    [storedTasksSnapshot]
+  )
+  const [taskOverrides, setTaskOverrides] = React.useState<TaskCard[] | null>(null)
+
+  const [page, setPage] = React.useState(0)
+  const [cardsPerPage, setCardsPerPage] = React.useState(defaultCardsPerPage)
+  const [editingTask, setEditingTask] = React.useState<TaskCard | null>(null)
+  const [viewMode, setViewMode] = React.useState<'todo' | 'calendar'>('todo')
+  const tasks = taskOverrides ?? persistedTasks
+  const columnData: KanbanColumn = {
+    ...initialColumns,
+    tasks
+  }
+
+  React.useEffect(() => {
+    if (!taskOverrides) {
+      return
+    }
+
+    saveStoredTasks(taskOverrides)
+  }, [taskOverrides])
+
+  const handleChangePage = (
+    _event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number
+  ) => {
+    setPage(getNextPage(_event, newPage))
+  }
+
+  const handleChangeCardsPerPage = (event: SelectChangeEvent) => {
+    setCardsPerPage(getNextCardsPerPage(event))
+    setPage(0)
+  }
+
+  const handleChangeViewMode = (
+    _event: React.MouseEvent<HTMLElement>,
+    nextViewMode: 'todo' | 'calendar' | null
+  ) => {
+    if (!nextViewMode) {
+      return
+    }
+
+    setViewMode(nextViewMode)
+  }
+
+  const handleEditTask = (taskId: number) => {
+    const selectedTask = columnData.tasks.find((task) => task.id === taskId)
+
+    if (!selectedTask) {
+      return
+    }
+
+    setEditingTask(selectedTask)
+  }
+
+  const handleCloseEditTask = () => {
+    setEditingTask(null)
+  }
+
+  const handleUpdateTask = (updatedTask: EditTaskFormValues) => {
+    setTaskOverrides((current) => {
+      const baseTasks = current ?? tasks
+      const editingTaskId = editingTask?.id
+
+      return baseTasks.map((task) =>
+        task.id === editingTaskId
+          ? {
+              ...task,
+              ...updatedTask
+            }
+          : task
+      )
+    })
+  }
+
+  const handleDeleteTask = (taskId: number) => {
+    setTaskOverrides((current) => (current ?? tasks).filter((task) => task.id !== taskId))
+  }
+
+  const handleTaskCreated = (newTask: NewTaskFormValues) => {
+    setTaskOverrides((current) => {
+      const baseTasks = current ?? tasks
+      const nextTaskId = getNextTaskId(baseTasks)
+
+      return [
+        {
+          id: nextTaskId,
+          ...newTask
+        },
+        ...baseTasks
+      ]
+    })
+  }
+
+  const handleExportTasks = (format: ReportFormat) => {
+    if (format === 'csv') {
+      exportTasksToCsv(tasks)
+      return
+    }
+
+    exportTasksToXlsx(tasks)
+  }
+
+  const handleImportTasks = (importedTasks: TaskCard[]) => {
+    if (importedTasks.length === 0) {
+      return
+    }
+
+    setTaskOverrides(importedTasks)
+    setPage(0)
+  }
+
+  const filteredTasks = getFilteredTasks(columnData.tasks, filters, searchQuery)
+  const maxPage = getMaxPage(filteredTasks, cardsPerPage)
+  const safePage = getSafePage(page, maxPage)
+  const visibleTasks = getVisibleItems(filteredTasks, safePage, cardsPerPage)
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      <Stack spacing={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1fr'
+          }}
+        >
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 4,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: 'background.paper'
+            }}
+          >
+            <Stack spacing={2} sx={{ p: 2 }}>
+              <Stack
+                direction="column"
+                sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}
+              >
+                <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
+                  <Box
+                    sx={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 2.5,
+                      display: 'grid',
+                      placeItems: 'center',
+                      color: columnData.accent,
+                      backgroundColor: `${columnData.accent}1a`
+                    }}
+                  >
+                    {columnData.icon}
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
+                    <Stack>
+                      <Typography sx={{ fontWeight: 700 }}>{columnData.title}</Typography>
+                    </Stack>
+                    <ToggleButtonGroup
+                      exclusive
+                      size="small"
+                      value={viewMode}
+                      onChange={handleChangeViewMode}
+                      aria-label="Switch task view"
+                      sx={{
+                        '& .MuiToggleButton-root': {
+                          borderRadius: 2,
+                          px: 1.5,
+                          textTransform: 'none'
+                        }
+                      }}
+                    >
+                      <ToggleButton value="todo" aria-label="To do view">
+                        To Do
+                      </ToggleButton>
+                      <ToggleButton value="calendar" aria-label="Calendar view">
+                        Calendar
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                    <Stack>
+                      <Chip label={String(filteredTasks.length)} color="primary" size="small" />
+                    </Stack>
+                  </Box>
+                </Stack>
+                {viewMode === 'todo' ? (
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Stack spacing={0.5} sx={{ minWidth: 92 }}>
+                      <Typography color="text.secondary" variant="caption">
+                        Tasks
+                      </Typography>
+                      <Select
+                        size="small"
+                        value={String(cardsPerPage)}
+                        onChange={handleChangeCardsPerPage}
+                        sx={{
+                          height: 25,
+                          borderRadius: 2
+                        }}
+                      >
+                        {[2, 4, 6].map((option) => (
+                          <MenuItem key={option} value={option}>
+                            {option}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Stack>
+                    <ReportDropdown onExport={handleExportTasks} onImport={handleImportTasks} />
+                  </Stack>
+                ) : (
+                  <Stack direction="row" sx={{ justifyContent: 'flex-end', width: '100%' }}>
+                    <ReportDropdown onExport={handleExportTasks} onImport={handleImportTasks} />
+                  </Stack>
+                )}
+              </Stack>
+
+              {viewMode === 'todo' ? (
+                <Stack
+                  spacing={1.5}
+                  sx={{ height: 550, overflowX: 'hidden', overflowY: 'auto' }}
+                >
+                  {visibleTasks.map((task) => (
+                    <Paper
+                      key={task.id}
+                      elevation={0}
+                      sx={{
+                        borderRadius: 3,
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: 'background.default'
+                      }}
+                    >
+                      <Stack spacing={1.5}>
+                        <Stack
+                          direction="row"
+                          sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ width: '100%', alignItems: 'flex-start' }}
+                          >
+                            <Typography sx={{ flex: 1, fontWeight: 600, pr: 1 }}>
+                              {task.title}
+                            </Typography>
+                            <Chip
+                              color={priorityColorMap[task.priority]}
+                              label={task.priority}
+                              size="small"
+                              variant="outlined"
+                            />
+                            <Chip
+                              color={statusColorMap[task.status]}
+                              label={task.status}
+                              size="small"
+                              variant="outlined"
+                            />
+                            <KanbanTaskDropdown
+                              taskId={task.id}
+                              taskTitle={task.title}
+                              onEdit={handleEditTask}
+                              onDelete={handleDeleteTask}
+                            />
+                          </Stack>
+                        </Stack>
+                        <Typography color="text.secondary" variant="body2">
+                          {task.summary}
+                        </Typography>
+                        {task.categories.length > 0 ? (
+                          <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                            {task.categories.map((category) => (
+                              <Chip
+                                key={`${task.id}-${category.label}`}
+                                label={category.label}
+                                size="small"
+                                variant="filled"
+                                sx={{
+                                  backgroundColor: category.color,
+                                  color: '#ffffff'
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                        ) : null}
+                        <Stack
+                          direction="row"
+                          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                            <Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
+                              {task.assignee}
+                            </Avatar>
+                            <Typography color="text.secondary" variant="caption">
+                              {task.due}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  ))}
+                </Stack>
+              ) : (
+                <FullCalendar tasks={filteredTasks} hideHeader />
+              )}
+            </Stack>
+
+            <NewTaskButton onCreateTask={handleTaskCreated} />
+
+            {viewMode === 'todo' ? (
+              <TablePagination
+                component="div"
+                count={filteredTasks.length}
+                onPageChange={handleChangePage}
+                page={safePage}
+                rowsPerPage={cardsPerPage}
+                rowsPerPageOptions={[]}
+                labelRowsPerPage=""
+                sx={paginationSx}
+              />
+            ) : null}
+          </Paper>
+        </Box>
+        <Modal
+          open={Boolean(editingTask)}
+          onClose={handleCloseEditTask}
+          title={editingTask ? `Edit ${editingTask.title}` : 'Edit Task'}
+        >
+          {editingTask ? (
+            <EditTaskForm
+              key={editingTask.id}
+              initialValues={editingTask}
+              onCancel={handleCloseEditTask}
+              onSubmit={handleUpdateTask}
+            />
+          ) : null}
+        </Modal>
+      </Stack>
+    </Box>
+  )
+}
