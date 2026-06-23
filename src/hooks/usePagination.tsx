@@ -3,30 +3,16 @@ import type { SelectChangeEvent } from '@mui/material/Select'
 const defaultCardsPerPage = 2
 
 const paginationSx = {
-  borderColor: 'divider',
-  '.MuiTablePagination-toolbar': {
-    minHeight: 52,
-    px: 2,
-    justifyContent: 'center',
-    gap: 1
-  },
-  '.MuiTablePagination-spacer': {
-    display: 'none'
-  },
-  '.MuiTablePagination-displayedRows': {
-    margin: 0
-  },
-  '.MuiTablePagination-selectLabel': {
-    display: 'none'
-  },
-  '.MuiTablePagination-input': {
-    display: 'none'
+  display: 'flex',
+  justifyContent: 'center',
+  px: 2,
+  pb: 2,
+  '& .MuiPagination-ul': {
+    flexWrap: 'nowrap'
   }
 }
 
-const getNextPage = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
-  return newPage
-}
+const getNextPage = (newPage: number) => newPage
 
 const getNextCardsPerPage = (event: SelectChangeEvent) => {
   return Number(event.target.value)

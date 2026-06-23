@@ -13,11 +13,11 @@ import MenuItem from '@mui/material/MenuItem'
 import Modal from '@/src/components/Modal'
 import NewTaskButton from '@/src/components/NewTaskButton'
 import type { NewTaskFormValues } from '@/src/components/NewTaskForm'
+import Pagination from '@mui/material/Pagination'
 import Paper from '@mui/material/Paper'
 import ReportDropdown from '@/src/components/ReportDropdown'
 import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
-import TablePagination from '@mui/material/TablePagination'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
@@ -95,11 +95,8 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
     saveStoredTasks(taskOverrides)
   }, [saveStoredTasks, taskOverrides])
 
-  const handleChangePage = (
-    _event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(getNextPage(_event, newPage))
+  const handleChangePage = (_event: React.ChangeEvent<unknown>, newPage: number) => {
+    setPage(getNextPage(newPage - 1))
   }
 
   const handleChangeCardsPerPage = (event: SelectChangeEvent) => {
@@ -415,16 +412,17 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
             <NewTaskButton onCreateTask={handleTaskCreated} />
 
             {viewMode === 'todo' ? (
-              <TablePagination
-                component="div"
-                count={filteredTasks.length}
-                onPageChange={handleChangePage}
-                page={safePage}
-                rowsPerPage={cardsPerPage}
-                rowsPerPageOptions={[]}
-                labelRowsPerPage=""
-                sx={paginationSx}
-              />
+              <Box sx={paginationSx}>
+                <Pagination
+                  color="primary"
+                  count={maxPage + 1}
+                  onChange={handleChangePage}
+                  page={safePage + 1}
+                  shape="rounded"
+                  showFirstButton
+                  showLastButton
+                />
+              </Box>
             ) : null}
           </Paper>
         </Box>
