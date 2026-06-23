@@ -27,7 +27,12 @@ import { usePagination } from '@/src/hooks/usePagination'
 import { useStorage } from '@/src/hooks/useStorage'
 import { useReport } from '@/src/hooks/useReport'
 import type { ReportFormat } from '@/src/hooks/useReport'
-import { useTodoListColumn, type KanbanColumn, type Priority, type TaskCard } from '@/src/hooks/useTodoListColumn'
+import {
+  useTodoListColumn,
+  type KanbanColumn,
+  type Priority,
+  type TaskCard
+} from '@/src/hooks/useTodoListColumn'
 
 type KanbanTemplateProps = {
   filters: TaskFilters
@@ -229,51 +234,62 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
             <Stack spacing={2} sx={{ p: 2 }}>
               <Stack
                 direction="column"
-                sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}
+                sx={{
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 1.5,
+                  width: '100%'
+                }}
               >
-                <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
-                  <Box
-                    sx={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 2.5,
-                      display: 'grid',
-                      placeItems: 'center',
-                      color: columnData.accent,
-                      backgroundColor: `${columnData.accent}1a`
-                    }}
-                  >
-                    {columnData.icon}
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
-                    <Stack>
-                      <Typography sx={{ fontWeight: 700 }}>{columnData.title}</Typography>
-                    </Stack>
-                    <ToggleButtonGroup
-                      exclusive
-                      size="small"
-                      value={viewMode}
-                      onChange={handleChangeViewMode}
-                      aria-label="Switch task view"
+                <Stack
+                  direction="row"
+                  sx={{ width: '100%', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
+                    <Box
                       sx={{
-                        '& .MuiToggleButton-root': {
-                          borderRadius: 2,
-                          px: 1.5,
-                          textTransform: 'none'
-                        }
+                        width: 34,
+                        height: 34,
+                        borderRadius: 2.5,
+                        display: 'grid',
+                        placeItems: 'center',
+                        color: columnData.accent,
+                        backgroundColor: `${columnData.accent}1a`
                       }}
                     >
-                      <ToggleButton value="todo" aria-label="To do view">
-                        To Do
-                      </ToggleButton>
-                      <ToggleButton value="calendar" aria-label="Calendar view">
-                        Calendar
-                      </ToggleButton>
-                    </ToggleButtonGroup>
-                    <Stack>
+                      {columnData.icon}
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
+                      <Typography sx={{ fontWeight: 700 }}>{columnData.title}</Typography>
                       <Chip label={String(filteredTasks.length)} color="primary" size="small" />
-                    </Stack>
-                  </Box>
+                    </Box>
+                  </Stack>
+                  <ToggleButtonGroup
+                    exclusive
+                    size="small"
+                    value={viewMode}
+                    onChange={handleChangeViewMode}
+                    aria-label="Switch task view"
+                    sx={{
+                      gap: 1,
+                      '& .MuiToggleButton-root': {
+                        borderRadius: 2,
+                        px: 1.5,
+                        textTransform: 'none'
+                      },
+                      '& .MuiToggleButtonGroup-grouped:not(:first-of-type)': {
+                        borderLeft: '1px solid',
+                        borderColor: 'divider'
+                      }
+                    }}
+                  >
+                    <ToggleButton value="todo" aria-label="To do view">
+                      To Do
+                    </ToggleButton>
+                    <ToggleButton value="calendar" aria-label="Calendar view">
+                      Calendar
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                 </Stack>
                 {viewMode === 'todo' ? (
                   <Stack
@@ -315,10 +331,7 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
               </Stack>
 
               {viewMode === 'todo' ? (
-                <Stack
-                  spacing={1.5}
-                  sx={{ height: 550, overflowX: 'hidden', overflowY: 'auto' }}
-                >
+                <Stack spacing={1.5} sx={{ height: 550, overflowX: 'hidden', overflowY: 'auto' }}>
                   {visibleTasks.map((task) => (
                     <Paper
                       key={task.id}
@@ -368,7 +381,12 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
                           {task.summary}
                         </Typography>
                         {task.categories.length > 0 ? (
-                          <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            useFlexGap
+                            sx={{ flexWrap: 'wrap' }}
+                          >
                             {task.categories.map((category) => (
                               <Chip
                                 key={`${task.id}-${category.label}`}
@@ -388,9 +406,10 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
                           sx={{ alignItems: 'center', justifyContent: 'space-between' }}
                         >
                           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                            <Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
-                              {task.assignee}
-                            </Avatar>
+                            {task.assignee ? (
+                              <Chip label={task.assignee} size="small" variant="filled" />
+                            ) : null}
+
                             <Typography color="text.secondary" variant="caption">
                               {task.due}
                             </Typography>

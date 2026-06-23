@@ -37,13 +37,10 @@ export default function InputWithIcon({ actions, searchQuery, onSearchChange }: 
           color="primary"
           fullWidth
           id={`${textFieldId}-input`}
-          placeholder="Summary"
+          placeholder="Search Summary"
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
           slotProps={{
-            htmlInput: {
-              className: 'task-input'
-            },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
@@ -52,7 +49,7 @@ export default function InputWithIcon({ actions, searchQuery, onSearchChange }: 
               )
             }
           }}
-          variant="standard"
+          variant="outlined"
         />
         {actions}
       </Box>

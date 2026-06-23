@@ -44,16 +44,16 @@ const normalizeImportedCategories = (
     const parsedValue = JSON.parse(normalizedValue) as ImportedCellValue
 
     if (Array.isArray(parsedValue)) {
-      return normalizeTaskCategories(parsedValue as Array<string | { label?: string; color?: string }>)
+      return normalizeTaskCategories(
+        parsedValue as Array<string | { label?: string; color?: string }>
+      )
     }
   } catch {}
 
   return normalizeTaskCategories(
-    normalizedValue
-      .split(',')
-      .map((category) => ({
-        label: category.trim()
-      }))
+    normalizedValue.split(',').map((category) => ({
+      label: category.trim()
+    }))
   )
 }
 
@@ -73,25 +73,11 @@ const normalizeImportedStatus = (value: ImportedCellValue): TaskStatus => {
     : 'Incomplete'
 }
 
-const toIsoDate = (date: Date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
 const normalizeImportedDueDate = (value: ImportedCellValue): string => {
-  if (value instanceof Date) {
-    return toIsoDate(value)
-  }
+  const parsedDate = XLSX.SSF.parse_date_code(value)
 
-  if (typeof value === 'number') {
-    const parsedDate = XLSX.SSF.parse_date_code(value)
-
-    if (parsedDate) {
-      return `${parsedDate.y}-${String(parsedDate.m).padStart(2, '0')}-${String(parsedDate.d).padStart(2, '0')}`
-    }
+  if (parsedDate) {
+    return `${parsedDate.y}-${String(parsedDate.m).padStart(2, '0')}-${String(parsedDate.d).padStart(2, '0')}`
   }
 
   return normalizeImportedString(value)
