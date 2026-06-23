@@ -1,32 +1,26 @@
 'use client'
 
 import * as React from 'react'
-import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
-import Chip from '@mui/material/Chip'
 import EditTaskForm from '@/src/components/EditTaskForm'
 import type { EditTaskFormValues } from '@/src/components/EditTaskForm'
-import FullCalendar from '@/src/components/FullCalendar'
+import KanbanNumberTaskListDropdown from '@/src/components/KanbanNumberTaskListDropdown'
+import KanbanToDoTaskLists from '@/src/components/KanbanToDoTaskLists'
+import KanbanTitle from '@/src/components/KanbanTitle'
 import { useFilter } from '@/src/hooks/useFilter'
 import type { TaskFilters } from '@/src/hooks/useFilter'
-import MenuItem from '@mui/material/MenuItem'
 import Modal from '@/src/components/Modal'
 import NewTaskButton from '@/src/components/NewTaskButton'
 import type { NewTaskFormValues } from '@/src/components/NewTaskForm'
 import Pagination from '@mui/material/Pagination'
 import Paper from '@mui/material/Paper'
-import ReportDropdown from '@/src/components/ReportDropdown'
-import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Typography from '@mui/material/Typography'
 import type { SelectChangeEvent } from '@mui/material/Select'
-import KanbanTaskDropdown from '@/src/components/KanbanTaskDropdown'
 import { usePagination } from '@/src/hooks/usePagination'
 import { useStorage } from '@/src/hooks/useStorage'
 import { useReport } from '@/src/hooks/useReport'
 import type { ReportFormat } from '@/src/hooks/useReport'
+import { mapTaskcategories } from '@/src/utils/KanbanUtils'
 import {
   useTodoListColumn,
   type KanbanColumn,
@@ -162,14 +156,7 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
         ...task,
         categories:
           task.id === taskId
-            ? task.categories.map((category) =>
-                category.label.toLowerCase() === normalizedCategoryLabel
-                  ? {
-                      ...category,
-                      color
-                    }
-                  : category
-              )
+            ? mapTaskcategories(task.categories, normalizedCategoryLabel, color)
             : task.categories
       }))
     )
@@ -241,191 +228,33 @@ export default function KanbanTemplate({ filters, searchQuery }: KanbanTemplateP
                   width: '100%'
                 }}
               >
-                <Stack
-                  direction="row"
-                  sx={{ width: '100%', alignItems: 'center', justifyContent: 'space-between' }}
-                >
-                  <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
-                    <Box
-                      sx={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 2.5,
-                        display: 'grid',
-                        placeItems: 'center',
-                        color: columnData.accent,
-                        backgroundColor: `${columnData.accent}1a`
-                      }}
-                    >
-                      {columnData.icon}
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
-                      <Typography sx={{ fontWeight: 700 }}>{columnData.title}</Typography>
-                      <Chip label={String(filteredTasks.length)} color="primary" size="small" />
-                    </Box>
-                  </Stack>
-                  <ToggleButtonGroup
-                    exclusive
-                    size="small"
-                    value={viewMode}
-                    onChange={handleChangeViewMode}
-                    aria-label="Switch task view"
-                    sx={{
-                      gap: 1,
-                      '& .MuiToggleButton-root': {
-                        borderRadius: 2,
-                        px: 1.5,
-                        textTransform: 'none'
-                      },
-                      '& .MuiToggleButtonGroup-grouped:not(:first-of-type)': {
-                        borderLeft: '1px solid',
-                        borderColor: 'divider'
-                      }
-                    }}
-                  >
-                    <ToggleButton value="todo" aria-label="To do view">
-                      To Do
-                    </ToggleButton>
-                    <ToggleButton value="calendar" aria-label="Calendar view">
-                      Calendar
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </Stack>
-                {viewMode === 'todo' ? (
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{
-                      justifyContent: 'space-between',
-                      width: '100%',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <Stack spacing={0.5} sx={{ minWidth: 92 }}>
-                      <Typography color="text.secondary" variant="caption">
-                        Tasks
-                      </Typography>
-                      <Select
-                        size="small"
-                        value={String(cardsPerPage)}
-                        onChange={handleChangeCardsPerPage}
-                        sx={{
-                          height: 25,
-                          borderRadius: 2
-                        }}
-                      >
-                        {[2, 4, 6].map((option) => (
-                          <MenuItem key={option} value={option}>
-                            {option}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </Stack>
-                    <ReportDropdown onExport={handleExportTasks} onImport={handleImportTasks} />
-                  </Stack>
-                ) : (
-                  <Stack direction="row" sx={{ justifyContent: 'flex-end', width: '100%' }}>
-                    <ReportDropdown onExport={handleExportTasks} onImport={handleImportTasks} />
-                  </Stack>
-                )}
+                <KanbanTitle
+                  accent={columnData.accent}
+                  icon={columnData.icon}
+                  taskCount={filteredTasks.length}
+                  title={columnData.title}
+                  viewMode={viewMode}
+                  onChangeViewMode={handleChangeViewMode}
+                />
+                <KanbanNumberTaskListDropdown
+                  cardsPerPage={cardsPerPage}
+                  onChangeCardsPerPage={handleChangeCardsPerPage}
+                  onExport={handleExportTasks}
+                  onImport={handleImportTasks}
+                  viewMode={viewMode}
+                />
               </Stack>
 
-              {viewMode === 'todo' ? (
-                <Stack spacing={1.5} sx={{ height: 550, overflowX: 'hidden', overflowY: 'auto' }}>
-                  {visibleTasks.map((task) => (
-                    <Paper
-                      key={task.id}
-                      elevation={0}
-                      sx={{
-                        borderRadius: 3,
-                        p: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        backgroundColor: 'background.default'
-                      }}
-                    >
-                      <Stack spacing={1.5}>
-                        <Stack
-                          direction="row"
-                          sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
-                        >
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            sx={{ width: '100%', alignItems: 'flex-start' }}
-                          >
-                            <Typography sx={{ flex: 1, fontWeight: 600, pr: 1 }}>
-                              {task.title}
-                            </Typography>
-                            <Chip
-                              color={priorityColorMap[task.priority]}
-                              label={task.priority}
-                              size="small"
-                              variant="outlined"
-                            />
-                            <Chip
-                              color={statusColorMap[task.status]}
-                              label={task.status}
-                              size="small"
-                              variant="outlined"
-                            />
-                            <KanbanTaskDropdown
-                              taskId={task.id}
-                              taskTitle={task.title}
-                              onEdit={handleEditTask}
-                              onDelete={handleDeleteTask}
-                            />
-                          </Stack>
-                        </Stack>
-                        <Typography color="text.secondary" variant="body2">
-                          {task.summary}
-                        </Typography>
-                        {task.categories.length > 0 ? (
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            useFlexGap
-                            sx={{ flexWrap: 'wrap' }}
-                          >
-                            {task.categories.map((category) => (
-                              <Chip
-                                key={`${task.id}-${category.label}`}
-                                label={category.label}
-                                size="small"
-                                variant="filled"
-                                sx={{
-                                  backgroundColor: category.color,
-                                  color: '#ffffff'
-                                }}
-                              />
-                            ))}
-                          </Stack>
-                        ) : null}
-                        <Stack
-                          direction="row"
-                          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                            {task.assignee ? (
-                              <Chip label={task.assignee} size="small" variant="filled" />
-                            ) : null}
-
-                            <Typography color="text.secondary" variant="caption">
-                              {task.due}
-                            </Typography>
-                          </Stack>
-                        </Stack>
-                      </Stack>
-                    </Paper>
-                  ))}
-                </Stack>
-              ) : (
-                <FullCalendar
-                  tasks={filteredTasks}
-                  hideHeader
-                  onCategoryColorChange={handleCategoryColorChange}
-                />
-              )}
+              <KanbanToDoTaskLists
+                filteredTasks={filteredTasks}
+                onCategoryColorChange={handleCategoryColorChange}
+                onDeleteTask={handleDeleteTask}
+                onEditTask={handleEditTask}
+                priorityColorMap={priorityColorMap}
+                statusColorMap={statusColorMap}
+                viewMode={viewMode}
+                visibleTasks={visibleTasks}
+              />
             </Stack>
 
             <NewTaskButton onCreateTask={handleTaskCreated} />

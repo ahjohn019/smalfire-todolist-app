@@ -14,6 +14,7 @@ import themePlugin from '@fullcalendar/react/themes/monarch'
 import { useCategoryMultiple } from '@/src/hooks/useCategoryMultiple'
 import { useStorage } from '@/src/hooks/useStorage'
 import { useTodoListColumn, type TaskCard } from '@/src/hooks/useTodoListColumn'
+import { mapTaskcategories } from '@/src/utils/KanbanUtils'
 
 export type FullCalendarProps = {
   tasks?: TaskCard[]
@@ -86,14 +87,7 @@ export default function FullCalendar({
       ...task,
       categories:
         task.id === taskId
-          ? task.categories.map((category) =>
-              category.label.toLowerCase() === normalizedCategoryLabel
-                ? {
-                    ...category,
-                    color
-                  }
-                : category
-            )
+          ? mapTaskcategories(task.categories, normalizedCategoryLabel, color)
           : task.categories
     }))
 
